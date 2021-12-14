@@ -6,6 +6,8 @@ import java.util.Map;
 
 public class SqlRuDateTimeParser implements DateTimeParser {
 
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("d M yy, HH:mm");
+
     private static final Map<String, String> MONTHS = Map.ofEntries(
             Map.entry("янв", "1"),
             Map.entry("фев", "2"),
@@ -23,27 +25,15 @@ public class SqlRuDateTimeParser implements DateTimeParser {
 
     @Override
     public LocalDateTime parse(String date) {
-        LocalDateTime now = LocalDateTime.now();
-        if (date.contains("сегодня")) {
-            date = date.replace("сегодня",
-                    String.format("%d %d %d",
-                            now.getDayOfMonth(),
-                            now.getMonthValue(),
-                            now.getYear() % 100)
-            );
-        } else if (date.contains("вчера")) {
-            now = now.minusDays(1);
-            date = date.replace("вчера",
-                    String.format("%d %d %d",
-                            now.getDayOfMonth(),
-                            now.getMonthValue(),
-                            now.getYear() % 100)
-            );
+        if (date.contains("сегодня") || date.contains("вчера")) {
+            String day = date.substring(0, date.indexOf(','));
+            LocalDateTime now = "вчера".equals(day) ? LocalDateTime.now().minusDays(1) : LocalDateTime.now();
+            date = date.replace(day,
+                    String.format("%d %d %d", now.getDayOfMonth(), now.getMonthValue(), now.getYear() % 100));
         } else {
             String month = date.substring(date.indexOf(' ') + 1, date.indexOf(' ') + 4);
             date = date.replaceFirst("[а-я]{3}", MONTHS.get(month));
         }
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("d M yy, HH:mm");
-        return LocalDateTime.parse(date, formatter);
+        return LocalDateTime.parse(date, FORMATTER);
     }
 }
