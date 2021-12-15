@@ -21,15 +21,19 @@ public class SqlRuParse implements Parse {
     @Override
     public List<Post> list(String link) {
         List<Post> posts = new ArrayList<>();
-        try {
-            Document doc = Jsoup.connect(link).get();
-            Elements elements = doc.select(".postslisttopic");
-            elements.forEach(el -> {
-                String href = el.child(0).attr("href");
-                posts.add(detail(href));
-            });
-        } catch (IOException e) {
-            e.printStackTrace();
+        for (int i = 1; i <= 5; i++) {
+            String url = link + i;
+            try {
+                Document doc = Jsoup.connect(url).get();
+                Elements elements = doc.select(".postslisttopic");
+                elements.stream()
+                        .map(el -> detail(el.child(0).attr("href")))
+                        .filter(p -> p.getTitle().toLowerCase().contains("java"))
+                        .filter(p -> !p.getTitle().toLowerCase().contains("javascript"))
+                        .forEach(posts::add);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
         return posts;
     }
@@ -41,9 +45,7 @@ public class SqlRuParse implements Parse {
             Document doc = Jsoup.connect(url).get();
             Element vacancy = doc.selectFirst(".msgTable");
             String title = vacancy.selectFirst(".messageHeader").ownText();
-            String desc = vacancy.select(".msgBody").get(1).html()
-                    .replaceAll("<br>", "\n")
-                    .replaceAll("</?b>", "");
+            String desc = vacancy.select(".msgBody").get(1).text();
             String created = vacancy.selectFirst(".msgFooter").text();
             created = created.substring(0, created.indexOf(':') + 3);
             post = new Post(title, url, desc, dateTimeParser.parse(created));
